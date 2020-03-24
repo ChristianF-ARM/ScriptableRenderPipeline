@@ -75,8 +75,6 @@ all_project_ci_nightly_{{ editor.version }}:
     - path: .yamato/upm-ci-abv.yml#smoke_test_{{ testplatform.name }}_{{ editor.version }}
       rerun: always
   {% endfor %}
-    - path: .yamato/upm-ci-tempates.yml#all_template_ci_{{ editor.version }}
-      rerun: always
     - path: .yamato/upm-ci-packages.yml#all_package_ci_{{ editor.version }}
       rerun: always
     - path: .yamato/upm-ci-universal.yml#Universal_Android_OpenGLES3_{{ editor.version }}
