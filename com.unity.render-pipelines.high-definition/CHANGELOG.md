@@ -491,6 +491,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Transform result from CIE XYZ to sRGB color space in EvalSensitivity for iridescence.
 - Hide the Probes section in the Renderer editos because it was unused.
 - Moved BeginCameraRendering callback right before culling.
+- Temporal Anti aliasing improvements.
 
 ## [7.1.1] - 2019-09-05
 
