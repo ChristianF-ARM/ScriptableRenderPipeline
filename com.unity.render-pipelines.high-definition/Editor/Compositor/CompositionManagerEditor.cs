@@ -186,8 +186,11 @@ namespace UnityEditor.Rendering.HighDefinition.Compositor
 
                 m_layerList.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
                 {
-                    var serializedProperties = m_SerializedLayerProperties[index];
-                    CompositionLayerUI.DrawItemInList(rect, serializedProperties, m_compositionManager.GetRenderTarget(index), m_compositionManager.aspectRatio, m_compositionManager.alphaSupport !=CompositionManager.AlphaChannelSupport.None);
+                    if (index < m_SerializedLayerProperties.Count)
+                    {
+                        var serializedProperties = m_SerializedLayerProperties[index];
+                        CompositionLayerUI.DrawItemInList(rect, serializedProperties, m_compositionManager.GetRenderTarget(index), m_compositionManager.aspectRatio, m_compositionManager.alphaSupport != CompositionManager.AlphaChannelSupport.None);
+                    }
                 };
 
                 m_layerList.onReorderCallbackWithDetails += (list, oldIndex, newIndex) =>
@@ -201,7 +204,7 @@ namespace UnityEditor.Rendering.HighDefinition.Compositor
 
                 m_layerList.elementHeightCallback = (index) =>
                 {
-                    if (index < m_compositionManager.numLayers)
+                    if (index < m_SerializedLayerProperties.Count)
                     {
                         return m_SerializedLayerProperties[index].GetListItemHeight();
                     }
