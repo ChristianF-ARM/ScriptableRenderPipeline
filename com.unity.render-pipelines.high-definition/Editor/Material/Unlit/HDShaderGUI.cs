@@ -80,17 +80,13 @@ namespace UnityEditor.Rendering.HighDefinition
                     throw new ArgumentException("Unknown SurfaceType");
             }
 
-            // Decal doesn't have properties to compute the render queue 
-            if (material.HasProperty(kTransparentSortPriority) && material.HasProperty(kAlphaCutoffEnabled))
-            {
-                float sortingPriority = material.GetFloat(kTransparentSortPriority);
-                bool alphaTest = material.GetFloat(kAlphaCutoffEnabled) > 0.5f;
-                material.renderQueue = HDRenderQueue.ChangeType(targetQueueType, (int)sortingPriority, alphaTest);
-            }
+            float sortingPriority = material.GetFloat(kTransparentSortPriority);
+            bool alphaTest = material.GetFloat(kAlphaCutoffEnabled) > 0.5f;
+            material.renderQueue = HDRenderQueue.ChangeType(targetQueueType, (int)sortingPriority, alphaTest);
         }
 
         readonly static string[] floatPropertiesToSynchronize = {
-            "_UseShadowThreshold", kReceivesSSR, kReceivesSSRTransparent, kUseSplitLighting
+            "_UseShadowThreshold", kReceivesSSR, kUseSplitLighting
         };
 
         protected static void SynchronizeShaderGraphProperties(Material material)

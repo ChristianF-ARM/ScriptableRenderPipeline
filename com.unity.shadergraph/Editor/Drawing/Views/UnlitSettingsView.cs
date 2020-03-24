@@ -9,10 +9,10 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.ShaderGraph.Drawing
 {
-    class UnlitSettingsView :  MasterNodeSettingsView
+    class UnlitSettingsView : VisualElement
     {
         UnlitMasterNode m_Node;
-        public UnlitSettingsView(UnlitMasterNode node) : base(node)
+        public UnlitSettingsView(UnlitMasterNode node)
         {
             m_Node = node;
 
@@ -46,7 +46,6 @@ namespace UnityEditor.ShaderGraph.Drawing
                 });
 
             Add(ps);
-            Add(GetShaderGUIOverridePropertySheet());
         }
 
         void ChangeSurface(ChangeEvent<Enum> evt)

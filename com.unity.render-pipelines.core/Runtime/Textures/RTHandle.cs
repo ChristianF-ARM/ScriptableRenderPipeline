@@ -102,13 +102,6 @@ namespace UnityEngine.Rendering
             m_NameID = new RenderTargetIdentifier(tex);
         }
 
-        internal void SetTexture(RenderTargetIdentifier tex)
-        {
-            m_RT = null;
-            m_ExternalTexture = null;
-            m_NameID = tex;
-        }
-
         /// <summary>
         /// Release the RTHandle
         /// </summary>

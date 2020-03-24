@@ -306,9 +306,6 @@ MonoBehaviour:
   quality:
     m_OverrideState: 0
     m_Value: 1
-  enabled:
-    m_OverrideState: 1
-    m_Value: 1
   rayTracing:
     m_OverrideState: 1
     m_Value: 1
@@ -398,8 +395,5 @@ MonoBehaviour:
     m_OverrideState: 1
     m_Value: 1
   skyAmbientMode:
-    m_OverrideState: 0
-    m_Value: 0
-  fogType:
     m_OverrideState: 0
     m_Value: 0

@@ -1,12 +1,12 @@
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.Rendering.Universal;
-using UnityEngine.Experimental.Rendering.Universal;
 
 namespace UnityEditor.Experimental.Rendering.Universal
 {
     static class Renderer2DUpgrader
     {
+        static Material s_SpriteLitDefault = AssetDatabase.LoadAssetAtPath<Material>("Packages/com.unity.render-pipelines.universal/Runtime/Materials/Sprite-Lit-Default.mat");
+
         delegate void Upgrader<T>(T toUpgrade) where T : Object;
 
         static void ProcessAssetDatabaseObjects<T>(string searchString, Upgrader<T> upgrader) where T : Object
@@ -29,56 +29,47 @@ namespace UnityEditor.Experimental.Rendering.Universal
         static void UpgradeGameObject(GameObject go)
         {
             Renderer[] spriteRenderers = go.GetComponentsInChildren<Renderer>(true);
-            Renderer2DData data = Light2DEditorUtility.GetRenderer2DData();
-            if (data != null)
+
+            bool upgraded = false;
+            foreach (Renderer renderer in spriteRenderers)
             {
-                Material defaultMat = data.GetDefaultMaterial(DefaultMaterialType.Sprite);
+                if (renderer is UnityEngine.U2D.SpriteShapeRenderer)
+                    Debug.Log("Sprite Shape Found");
 
-                bool upgraded = false;
-                foreach (Renderer renderer in spriteRenderers)
+                int materialCount = renderer.sharedMaterials.Length;
+                Material[] newMaterials = new Material[materialCount];
+
+                for (int i = 0; i < materialCount; i++)
                 {
-                    int materialCount = renderer.sharedMaterials.Length;
-                    Material[] newMaterials = new Material[materialCount];
+                    Material mat = renderer.sharedMaterials[i];
 
-                    for (int i = 0; i < materialCount; i++)
+                    if (mat != null && mat.shader.name == "Sprites/Default")
                     {
-                        Material mat = renderer.sharedMaterials[i];
-
-                        if (mat != null && mat.shader.name == "Sprites/Default")
-                        {
-                            newMaterials[i] = defaultMat;
-                            upgraded = true;
-                        }
-                        else
-                        {
-                            newMaterials[i] = renderer.sharedMaterials[i];
-                        }
-
+                        newMaterials[i] = s_SpriteLitDefault;
+                        upgraded = true;
                     }
-
-                    if (upgraded)
-                        renderer.sharedMaterials = newMaterials;
+                    else
+                    {
+                        newMaterials[i] = renderer.sharedMaterials[i];
+                    }
                 }
 
                 if (upgraded)
-                {
-                    Debug.Log(go.name + " was upgraded.", go);
-                    EditorSceneManager.MarkSceneDirty(go.scene);
-                }
+                    renderer.sharedMaterials = newMaterials;
+            }
+
+            if (upgraded)
+            {
+                Debug.Log(go.name + " was upgraded.", go);
+                EditorSceneManager.MarkSceneDirty(go.scene);
             }
         }
 
         static void UpgradeMaterial(Material mat)
         {
-            Renderer2DData data = Light2DEditorUtility.GetRenderer2DData();
-            if (data != null)
+            if (mat.shader.name == "Sprites/Default")
             {
-                Material defaultMat = data.GetDefaultMaterial(DefaultMaterialType.Sprite);
-
-                if (mat.shader.name == "Sprites/Default")
-                {
-                    mat.shader = defaultMat.shader;
-                }
+                mat.shader = s_SpriteLitDefault.shader;
             }
         }
 

@@ -43,10 +43,6 @@ namespace UnityEngine.Rendering.HighDefinition
             {
                 skyRenderer.Cleanup();
             }
-
-            HDRenderPipeline hdrp = HDRenderPipeline.currentPipeline;
-            if (hdrp != null)
-                hdrp.skyManager.ReleaseCachedContext(cachedSkyRenderingContextId);
         }
 
         public bool IsValid()

@@ -184,7 +184,6 @@ namespace UnityEditor.Rendering.HighDefinition
         {
             EditorGUI.BeginChangeCheck();
             Rect lineRect = EditorGUILayout.GetControlRect();
-            HDLightType lightType = serialized.type;
             HDLightType updatedLightType;
 
             //Partial support for prefab. There is no way to fully support it at the moment.
@@ -192,6 +191,7 @@ namespace UnityEditor.Rendering.HighDefinition
             //(This will continue unless we remove AdditionalDatas)
             using (new SerializedHDLight.LightTypeEditionScope(lineRect, s_Styles.shape, serialized))
             {
+                HDLightType lightType = serialized.type;
                 EditorGUI.showMixedValue = lightType == (HDLightType)(-1);
                 int index = Array.FindIndex((HDLightType[])Enum.GetValues(typeof(HDLightType)), x => x == lightType);
                 updatedLightType = (HDLightType)EditorGUI.Popup(lineRect, s_Styles.shape, index, s_Styles.shapeNames);
@@ -226,7 +226,6 @@ namespace UnityEditor.Rendering.HighDefinition
 
                 // For GI we need to detect any change on additional data and call SetLightDirty + For intensity we need to detect light shape change
                 serialized.needUpdateAreaLightEmissiveMeshComponents = true;
-                serialized.FetchAreaLightEmissiveMeshComponents();
                 SetLightsDirty(owner); // Should be apply only to parameter that's affect GI, but make the code cleaner
             }
             EditorGUI.showMixedValue = false;
@@ -410,7 +409,6 @@ namespace UnityEditor.Rendering.HighDefinition
                         case AreaLightShape.Disc:
                             //draw the built-in area light control at the moment as everything is handled by built-in
                             serialized.settings.DrawArea();
-                            serialized.displayAreaLightEmissiveMesh.boolValue = false; //force deactivate emissive mesh for Disc (not supported) 
                             break;
                         case (AreaLightShape)(-1): //multiple different values
                             using (new EditorGUI.DisabledScope(true))
@@ -725,7 +723,7 @@ namespace UnityEditor.Rendering.HighDefinition
 
                 ShowCookieTextureWarnings(serialized.settings.cookie);
             }
-            else if (serialized.areaLightShape == AreaLightShape.Rectangle || serialized.areaLightShape == AreaLightShape.Disc)
+            else if (serialized.areaLightShape == AreaLightShape.Rectangle)
             {
                 EditorGUILayout.ObjectField( serialized.areaLightCookie, s_Styles.areaLightCookie );
                 ShowCookieTextureWarnings(serialized.areaLightCookie.objectReferenceValue as Texture);
@@ -773,7 +771,7 @@ namespace UnityEditor.Rendering.HighDefinition
             if (cookie.width < LightCookieManager.k_MinCookieSize || cookie.height < LightCookieManager.k_MinCookieSize)
                 EditorGUILayout.HelpBox(s_Styles.cookieTooSmall, MessageType.Warning);
         }
-        
+
         static void DrawEmissionAdvancedContent(SerializedHDLight serialized, Editor owner)
         {
             HDLightType lightType = serialized.type;
@@ -796,48 +794,13 @@ namespace UnityEditor.Rendering.HighDefinition
                     || lightType == HDLightType.Spot && serialized.spotLightShape.GetEnumValue<SpotLightShape>() != SpotLightShape.Box)
                 EditorGUILayout.PropertyField(serialized.applyRangeAttenuation, s_Styles.applyRangeAttenuation);
 
-            // Emissive mesh for area light only (and not supported on Disc currently)
-            if (lightType == HDLightType.Area && serialized.areaLightShape != AreaLightShape.Disc)
+            // Emissive mesh for area light only
+            if (lightType == HDLightType.Area)
             {
                 EditorGUI.BeginChangeCheck();
                 EditorGUILayout.PropertyField(serialized.displayAreaLightEmissiveMesh, s_Styles.displayAreaLightEmissiveMesh);
                 if (EditorGUI.EndChangeCheck())
-                {
-                    serialized.FetchAreaLightEmissiveMeshComponents();
                     serialized.needUpdateAreaLightEmissiveMeshComponents = true;
-                }
-
-                bool showSubArea = serialized.displayAreaLightEmissiveMesh.boolValue && !serialized.displayAreaLightEmissiveMesh.hasMultipleDifferentValues;
-                ++EditorGUI.indentLevel;
-                    
-                Rect lineRect = EditorGUILayout.GetControlRect();
-                ShadowCastingMode newCastShadow;
-                EditorGUI.showMixedValue = serialized.areaLightEmissiveMeshCastShadow.hasMultipleDifferentValues;
-                EditorGUI.BeginChangeCheck();
-                using (new SerializedHDLight.AreaLightEmissiveMeshDrawScope(lineRect, s_Styles.areaLightEmissiveMeshCastShadow, showSubArea, serialized.areaLightEmissiveMeshCastShadow, serialized.deportedAreaLightEmissiveMeshCastShadow))
-                {
-                    newCastShadow = (ShadowCastingMode)EditorGUI.EnumPopup(lineRect, s_Styles.areaLightEmissiveMeshCastShadow, (ShadowCastingMode)serialized.areaLightEmissiveMeshCastShadow.intValue);
-                }
-                if (EditorGUI.EndChangeCheck())
-                {
-                    serialized.UpdateAreaLightEmissiveMeshCastShadow(newCastShadow);
-                }
-
-                lineRect = EditorGUILayout.GetControlRect();
-                SerializedHDLight.MotionVector newMotionVector;
-                EditorGUI.showMixedValue = serialized.areaLightEmissiveMeshMotionVector.hasMultipleDifferentValues;
-                EditorGUI.BeginChangeCheck();
-                using (new SerializedHDLight.AreaLightEmissiveMeshDrawScope(lineRect, s_Styles.areaLightEmissiveMeshMotionVector, showSubArea, serialized.areaLightEmissiveMeshMotionVector, serialized.deportedAreaLightEmissiveMeshMotionVector))
-                {
-                    newMotionVector = (SerializedHDLight.MotionVector)EditorGUI.EnumPopup(lineRect, s_Styles.areaLightEmissiveMeshMotionVector, (SerializedHDLight.MotionVector)serialized.areaLightEmissiveMeshMotionVector.intValue);
-                }
-                if (EditorGUI.EndChangeCheck())
-                {
-                    serialized.UpdateAreaLightEmissiveMeshMotionVectorGeneration(newMotionVector);
-                }
-
-                EditorGUI.showMixedValue = false;
-                --EditorGUI.indentLevel;
             }
 
             if (EditorGUI.EndChangeCheck())
@@ -960,10 +923,7 @@ namespace UnityEditor.Rendering.HighDefinition
 
                             EditorGUILayout.PropertyField(serialized.numRayTracingSamples, s_Styles.numRayTracingSamples);
                             EditorGUILayout.PropertyField(serialized.filterTracedShadow, s_Styles.denoiseTracedShadow);
-                            EditorGUI.indentLevel++;
                             EditorGUILayout.PropertyField(serialized.filterSizeTraced, s_Styles.denoiserRadius);
-                            EditorGUILayout.PropertyField(serialized.distanceBasedFiltering, s_Styles.distanceBasedFiltering);
-                            EditorGUI.indentLevel--;
                             EditorGUI.indentLevel--;
                         }
                     }
@@ -1068,8 +1028,7 @@ namespace UnityEditor.Rendering.HighDefinition
         {
             // If we're not in decoupled mode for light layers, we sync light with shadow layers:
             foreach (Light target in owner.targets)
-                if (target.renderingLayerMask != serialized.lightlayersMask.intValue)
-                    target.renderingLayerMask = serialized.lightlayersMask.intValue;
+                target.renderingLayerMask = serialized.lightlayersMask.intValue;
         }
 
         static void DrawContactShadowsContent(SerializedHDLight serialized, Editor owner)

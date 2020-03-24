@@ -5,7 +5,6 @@ using UnityEngine;
 using UnityEditor.Graphing;
 using UnityEditor.ShaderGraph.Drawing.Colors;
 using UnityEditor.ShaderGraph.Internal;
-using UnityEditor.Graphing.Util;
 
 namespace UnityEditor.ShaderGraph
 {
@@ -41,6 +40,8 @@ namespace UnityEditor.ShaderGraph
 
         [SerializeField]
         List<SerializationHelper.JSONSerializedElement> m_SerializableSlots = new List<SerializationHelper.JSONSerializedElement>();
+
+        public Identifier tempId { get; set; }
 
         public GraphData owner { get; set; }
 
@@ -147,7 +148,7 @@ namespace UnityEditor.ShaderGraph
 
         public virtual bool allowedInSubGraph
         {
-            get { return !(this is IMasterNode); }
+            get { return true; }
         }
 
         public virtual bool allowedInMainGraph
@@ -165,9 +166,6 @@ namespace UnityEditor.ShaderGraph
             get { return m_HasError; }
             protected set { m_HasError = value; }
         }
-
-        //needed for HDRP material update system
-        public virtual object saveContext => null;
 
         string m_DefaultVariableName;
         string m_NameForDefaultVariableName;
@@ -285,7 +283,7 @@ namespace UnityEditor.ShaderGraph
                 if (slot == null)
                     return string.Empty;
 
-                return GenerationUtils.AdaptNodeOutput(fromNode, slot.id, inputSlot.concreteValueType);
+                return ShaderGenerator.AdaptNodeOutput(fromNode, slot.id, inputSlot.concreteValueType);
             }
 
             return inputSlot.GetDefaultValue(generationMode);
@@ -337,13 +335,13 @@ namespace UnityEditor.ShaderGraph
 
         protected const string k_validationErrorMessage = "Error found during node validation";
 
-        public virtual void EvaluateConcretePrecision()
+        public virtual bool ValidateConcretePrecision(ref string errorMessage)
         {
             // If Node has a precision override use that
             if (precision != Precision.Inherit)
             {
                 m_ConcretePrecision = precision.ToConcrete();
-                return;
+                return false;
             }
 
             // Get inputs
@@ -356,11 +354,12 @@ namespace UnityEditor.ShaderGraph
                 if (tempSlots.Count == 0)
                 {
                     m_ConcretePrecision = owner.concretePrecision;
-                    return;
+                    return false;
                 }
 
                 // Otherwise compare precisions from inputs
                 var precisionsToCompare = new List<int>();
+                bool isInError = false;
 
                 foreach (var inputSlot in tempSlots)
                 {
@@ -377,8 +376,8 @@ namespace UnityEditor.ShaderGraph
                     var outputNode = owner.GetNodeFromGuid(outputSlotRef.nodeGuid);
                     if (outputNode == null)
                     {
-                        owner.AddConcretizationError(guid, string.Format("Failed to find Node with Guid {0}", outputSlotRef.nodeGuid));
-                        hasError = true;
+                        errorMessage = string.Format("Failed to find Node with Guid {0}", outputSlotRef.nodeGuid);
+                        isInError = true;
                         continue;
                     }
 
@@ -390,12 +389,15 @@ namespace UnityEditor.ShaderGraph
                 m_ConcretePrecision = (ConcretePrecision)precisionsToCompare.OrderBy(x => x).First();
 
                 // Clean up
-                return;
+                return isInError;
             }
         }
 
-        public virtual void EvaluateDynamicMaterialSlots()
+        public virtual void ValidateNode()
         {
+            var isInError = false;
+            var errorMessage = k_validationErrorMessage;
+
             var dynamicInputSlotsToCompare = DictionaryPool<DynamicVectorMaterialSlot, ConcreteSlotValueType>.Get();
             var skippedDynamicSlots = ListPool<DynamicVectorMaterialSlot>.Get();
 
@@ -442,12 +444,12 @@ namespace UnityEditor.ShaderGraph
                     // are compatible.
                     if (inputSlot is DynamicVectorMaterialSlot)
                     {
-                        dynamicInputSlotsToCompare.Add((DynamicVectorMaterialSlot)inputSlot, outputConcreteType);
+                        dynamicInputSlotsToCompare.Add((DynamicVectorMaterialSlot) inputSlot, outputConcreteType);
                         continue;
                     }
                     else if (inputSlot is DynamicMatrixMaterialSlot)
                     {
-                        dynamicMatrixInputSlotsToCompare.Add((DynamicMatrixMaterialSlot)inputSlot, outputConcreteType);
+                        dynamicMatrixInputSlotsToCompare.Add((DynamicMatrixMaterialSlot) inputSlot, outputConcreteType);
                         continue;
                     }
                 }
@@ -469,12 +471,7 @@ namespace UnityEditor.ShaderGraph
 
                 tempSlots.Clear();
                 GetInputSlots(tempSlots);
-                bool inputError = tempSlots.Any(x => x.hasError);
-                if(inputError)
-                {
-                    owner.AddConcretizationError(guid, string.Format("Node {0} had input error", guid));
-                    hasError = true;
-                }
+                var inputError = tempSlots.Any(x => x.hasError);
 
                 // configure the output slots now
                 // their slotType will either be the default output slotType
@@ -492,27 +489,34 @@ namespace UnityEditor.ShaderGraph
                         continue;
                     }
 
-                    if (outputSlot is DynamicVectorMaterialSlot dynamicVectorMaterialSlot)
+                    if (outputSlot is DynamicVectorMaterialSlot)
                     {
-                        dynamicVectorMaterialSlot.SetConcreteType(dynamicType);
+                        (outputSlot as DynamicVectorMaterialSlot).SetConcreteType(dynamicType);
                         continue;
                     }
-                    else if (outputSlot is DynamicMatrixMaterialSlot dynamicMatrixMaterialSlot)
+                    else if (outputSlot is DynamicMatrixMaterialSlot)
                     {
-                        dynamicMatrixMaterialSlot.SetConcreteType(dynamicMatrixType);
+                        (outputSlot as DynamicMatrixMaterialSlot).SetConcreteType(dynamicMatrixType);
                         continue;
                     }
                 }
 
-                
+                isInError |= inputError;
                 tempSlots.Clear();
                 GetOutputSlots(tempSlots);
-                if(tempSlots.Any(x => x.hasError))
+                isInError |= tempSlots.Any(x => x.hasError);
+                isInError |= CalculateNodeHasError(ref errorMessage);
+                isInError |= ValidateConcretePrecision(ref errorMessage);
+                hasError = isInError;
+
+                if (isInError)
                 {
-                    owner.AddConcretizationError(guid, string.Format("Node {0} had output error", guid));
-                    hasError = true;
+                    ((GraphData) owner).AddValidationError(tempId, errorMessage);
                 }
-                CalculateNodeHasError();
+                else
+                {
+                    ++version;
+                }
 
                 ListPool<DynamicVectorMaterialSlot>.Release(skippedDynamicSlots);
                 DictionaryPool<DynamicVectorMaterialSlot, ConcreteSlotValueType>.Release(dynamicInputSlotsToCompare);
@@ -522,27 +526,10 @@ namespace UnityEditor.ShaderGraph
             }
         }
 
-        public virtual void Concretize()
-        {
-            hasError = false;
-            owner.ClearErrorsForNode(this);
-            EvaluateConcretePrecision();
-            EvaluateDynamicMaterialSlots();
-            if(!hasError)
-            {
-                ++version;
-            }
-        }
-
-        public virtual void ValidateNode()
-        {
-            
-        }
-
         public int version { get; set; }
         public virtual bool canCopyNode => true;
-        
-        protected virtual void CalculateNodeHasError()
+        //True if error
+        protected virtual bool CalculateNodeHasError(ref string errorMessage)
         {
             foreach (var slot in this.GetInputSlots<MaterialSlot>())
             {
@@ -553,12 +540,13 @@ namespace UnityEditor.ShaderGraph
                     var outputSlot = outputNode.GetOutputSlots<MaterialSlot>().First(s => s.id == edge.outputSlot.slotId);
                     if (!slot.IsCompatibleWith(outputSlot))
                     {
-                        owner.AddConcretizationError(guid, $"Slot {slot.RawDisplayName()} cannot accept input of type {outputSlot.concreteValueType}.");
-                        hasError = true;
-                        return;
+                        errorMessage = $"Slot {slot.RawDisplayName()} cannot accept input of type {outputSlot.concreteValueType}.";
+                        return true;
                     }
                 }
             }
+
+            return false;
         }
 
         public virtual void CollectPreviewMaterialProperties(List<PreviewProperty> properties)
@@ -749,7 +737,5 @@ namespace UnityEditor.ShaderGraph
             var slot = FindSlot<MaterialSlot>(slotId);
             return slot != null && owner.GetEdges(slot.slotReference).Any();
         }
-
-        public virtual void Setup() {}
     }
 }

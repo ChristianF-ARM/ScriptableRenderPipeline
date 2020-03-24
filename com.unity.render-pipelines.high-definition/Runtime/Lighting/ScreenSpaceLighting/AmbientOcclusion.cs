@@ -178,6 +178,7 @@ namespace UnityEngine.Rendering.HighDefinition
         private RTHandle m_FinalHalfRes;
 
         private bool m_RunningFullRes = false;
+        private Vector4 m_HistoryInfo = new Vector4();
 
         readonly HDRaytracingAmbientOcclusion m_RaytracingAmbientOcclusion = new HDRaytracingAmbientOcclusion();
 
@@ -296,7 +297,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
         }
 
-        RenderAOParameters PrepareRenderAOParameters(HDCamera camera, RTHandleProperties rtHandleProperties, Vector2 historySize, int frameCount)
+        RenderAOParameters PrepareRenderAOParameters(HDCamera camera, RTHandleProperties rtHandleProperties, int frameCount)
         {
             var parameters = new RenderAOParameters();
 
@@ -347,8 +348,8 @@ namespace UnityEngine.Rendering.HighDefinition
             
 
             parameters.aoParams2 = new Vector4(
-                historySize.x,
-                historySize.y,
+                m_HistoryInfo.x,
+                m_HistoryInfo.y,
                 1.0f / (settings.stepCount + 1.0f),
                 radInPixels
             );
@@ -565,11 +566,7 @@ namespace UnityEngine.Rendering.HighDefinition
                     var currentHistory = camera.GetCurrentFrameRT((int)HDCameraFrameHistoryType.AmbientOcclusion);
                     var historyOutput = camera.GetPreviousFrameRT((int)HDCameraFrameHistoryType.AmbientOcclusion);
 
-                    Vector2 historySize = new Vector2(currentHistory.referenceSize.x * currentHistory.scaleFactor.x,
-                                                      currentHistory.referenceSize.y * currentHistory.scaleFactor.y);
-                    var rtScaleForHistory = camera.historyRTHandleProperties.rtHandleScale;
-
-                    var aoParameters = PrepareRenderAOParameters(camera, RTHandles.rtHandleProperties, historySize * rtScaleForHistory, frameCount);
+                    var aoParameters = PrepareRenderAOParameters(camera, RTHandles.rtHandleProperties, frameCount);
                     using (new ProfilingScope(cmd, ProfilingSampler.Get(HDProfileId.HorizonSSAO)))
                     {
                         RenderAO(aoParameters, m_PackedDataTex, m_Resources, cmd);
@@ -579,6 +576,7 @@ namespace UnityEngine.Rendering.HighDefinition
                     {
                         var output = m_RunningFullRes ? m_AmbientOcclusionTex : m_FinalHalfRes;
                         DenoiseAO(aoParameters, m_PackedDataTex, m_PackedDataBlurred, currentHistory, historyOutput, output, cmd);
+                        m_HistoryInfo = aoParameters.aoBufferInfo;
                     }
 
                     if (!m_RunningFullRes)
