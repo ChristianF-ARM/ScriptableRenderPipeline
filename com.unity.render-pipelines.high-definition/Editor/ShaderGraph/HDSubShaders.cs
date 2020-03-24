@@ -19,6 +19,7 @@ namespace UnityEditor.Rendering.HighDefinition.ShaderGraph
                 { HDPasses.Unlit.MotionVectors, new FieldCondition(Fields.SurfaceOpaque, true) },
                 { HDPasses.Unlit.ForwardOnly },
             },
+            customEditorOverride = "Rendering.HighDefinition.UnlitUI",
         };
 
         public static SubShaderDescriptor PBR = new SubShaderDescriptor()
@@ -36,6 +37,7 @@ namespace UnityEditor.Rendering.HighDefinition.ShaderGraph
                 { HDPasses.PBR.MotionVectors, new FieldCondition(Fields.SurfaceOpaque, true) },
                 { HDPasses.PBR.Forward },
             },
+            customEditorOverride = "Rendering.HighDefinition.HDPBRLitGUI",
         };
 
         public static SubShaderDescriptor HDUnlit = new SubShaderDescriptor()
@@ -52,7 +54,7 @@ namespace UnityEditor.Rendering.HighDefinition.ShaderGraph
                 { HDPasses.HDUnlit.Distortion, new FieldCondition(HDFields.TransparentDistortion, true) },
                 { HDPasses.HDUnlit.ForwardOnly },
             },
-            customEditorOverride = @"CustomEditor ""UnityEditor.Rendering.HighDefinition.HDUnlitGUI""",
+            customEditorOverride = "Rendering.HighDefinition.HDUnlitGUI",
         };
 
         public static SubShaderDescriptor HDLit = new SubShaderDescriptor()
@@ -74,7 +76,7 @@ namespace UnityEditor.Rendering.HighDefinition.ShaderGraph
                 { HDPasses.HDLit.TransparentDepthPostpass, new FieldCondition(HDFields.TransparentDepthPostPass, true) },
                 { HDPasses.HDLit.RayTracingPrepass, new FieldCondition(HDFields.RayTracing, true) },
             },
-            customEditorOverride = @"CustomEditor ""UnityEditor.Rendering.HighDefinition.HDLitGUI""",
+            customEditorOverride = "Rendering.HighDefinition.HDLitGUI",
         };
 
         public static SubShaderDescriptor Eye = new SubShaderDescriptor()
@@ -90,7 +92,7 @@ namespace UnityEditor.Rendering.HighDefinition.ShaderGraph
                 { HDPasses.Eye.MotionVectors },
                 { HDPasses.Eye.ForwardOnly },
             },
-            customEditorOverride = @"CustomEditor ""UnityEditor.Rendering.HighDefinition.EyeGUI""",
+            customEditorOverride = "Rendering.HighDefinition.EyeGUI",
         };
 
         public static SubShaderDescriptor Fabric = new SubShaderDescriptor()
@@ -106,7 +108,7 @@ namespace UnityEditor.Rendering.HighDefinition.ShaderGraph
                 { HDPasses.Fabric.MotionVectors },
                 { HDPasses.Fabric.FabricForwardOnly },
             },
-            customEditorOverride = @"CustomEditor ""UnityEditor.Rendering.HighDefinition.FabricGUI""",
+            customEditorOverride = "Rendering.HighDefinition.FabricGUI",
         };
         public static SubShaderDescriptor Hair = new SubShaderDescriptor()
         {
@@ -124,7 +126,7 @@ namespace UnityEditor.Rendering.HighDefinition.ShaderGraph
                 { HDPasses.Hair.ForwardOnly },
                 { HDPasses.Hair.TransparentDepthPostpass, new FieldCondition(HDFields.TransparentDepthPostPass, true) },
             },
-            customEditorOverride = @"CustomEditor ""UnityEditor.Rendering.HighDefinition.HairGUI""",
+            customEditorOverride = "Rendering.HighDefinition.HairGUI",
         };
 
         public static SubShaderDescriptor StackLit = new SubShaderDescriptor()
@@ -141,7 +143,7 @@ namespace UnityEditor.Rendering.HighDefinition.ShaderGraph
                 { HDPasses.StackLit.Distortion, new FieldCondition(HDFields.TransparentDistortion, true) },
                 { HDPasses.StackLit.ForwardOnly },
             },
-            customEditorOverride = @"CustomEditor ""UnityEditor.Rendering.HighDefinition.StackLitGUI""",
+            customEditorOverride = "Rendering.HighDefinition.StackLitGUI",
         };
 
         public static SubShaderDescriptor Decal = new SubShaderDescriptor()
@@ -158,7 +160,7 @@ namespace UnityEditor.Rendering.HighDefinition.ShaderGraph
                 { HDPasses.Decal.MeshEmissive, new FieldCondition(HDFields.AffectsEmission, true) },
                 { HDPasses.Decal.Preview, new FieldCondition(Fields.IsPreview, true) },
             },
-            customEditorOverride = @"CustomEditor ""UnityEditor.Rendering.HighDefinition.DecalGUI""",
+            customEditorOverride = "Rendering.HighDefinition.DecalGUI",
         };
 
         public static SubShaderDescriptor FabricRaytracing = new SubShaderDescriptor()
