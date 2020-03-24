@@ -318,9 +318,6 @@ float ModifyBlendWithMotionVectorRejection(TEXTURE2D_X(VelocityMagnitudeTexture)
     return blendFactor;
 #endif
 }
-float GetMVRejection(float mvLength, float2 prevUV)
-{
-}
 
 // ---------------------------------------------------
 // History sampling 
